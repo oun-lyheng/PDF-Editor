@@ -1,0 +1,62 @@
+:root {
+  /* Workstation Slate Theme (Dark/Charcoal Desktop Aesthetic) */
+  --bg-app: #191b1d;
+  --bg-titlebar: #141617;
+  --bg-toolbar: #212427;
+  --bg-toolbar-secondary: #282b30;
+  --bg-sidebar: #1e2023;
+  --bg-canvas: #3a3d42;
+  --bg-panel: #212427;
+  --bg-card: #282c31;
+  --bg-card-hover: #32373e;
+  --bg-active: #32373e;
+  --bg-input: #191b1d;
+  --bg-modal: #22252a;
+  --bg-modal-overlay: rgba(0, 0, 0, 0.65);
+
+  /* Borders & Dividers */
+  --border-subtle: #2d3137;
+  --border-medium: #3c424a;
+  --border-focus: #3b82f6;
+
+  /* Typography Colors */
+  --text-main: #f0f2f5;
+  --text-muted: #9aa1a9;
+  --text-subtle: #6e757f;
+  --text-inverse: #111315;
+
+  /* Enterprise Accents (Clean, Utilitarian) */
+  --accent-primary: #2563eb;
+  --accent-primary-hover: #1d4ed8;
+  --accent-active: #3b82f6;
+  --accent-danger: #dc2626;
+  --accent-danger-hover: #b91c1c;
+  --accent-success: #16a34a;
+  --accent-warning: #d97706;
+
+  /* Highlights & Overlays */
+  --highlight-yellow: rgba(250, 204, 21, 0.35);
+  --highlight-green: rgba(74, 222, 128, 0.35);
+  --highlight-blue: rgba(96, 165, 250, 0.35);
+  --highlight-pink: rgba(244, 114, 182, 0.35);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --shadow-canvas: 0 4px 20px rgba(0, 0, 0, 0.45);
+
+  /* Density & Dimensions */
+  --titlebar-height: 38px;
+  --toolbar-height: 44px;
+  --propbar-height: 36px;
+  --sidebar-width: 240px;
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Standard Fonts */
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Cascadia Code", "Fira Code", Consolas, monospace;
+}
