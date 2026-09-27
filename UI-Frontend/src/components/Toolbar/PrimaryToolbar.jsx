@@ -11,7 +11,9 @@ import {
   ZoomOut, 
   Maximize2,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  Undo2,
+  Redo2
 } from 'lucide-react';
 
 export function PrimaryToolbar({
@@ -23,7 +25,11 @@ export function PrimaryToolbar({
   setZoom,
   onRotateCurrentPage,
   hasDocument,
-  onOpenSignatureModal
+  onOpenSignatureModal,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }) {
   return (
     <div className="primary-toolbar">
@@ -37,6 +43,28 @@ export function PrimaryToolbar({
         >
           {isSidebarOpen ? <PanelLeftClose size={15} /> : <PanelLeft size={15} />}
           <span>{isSidebarOpen ? 'Hide Pages' : 'Pages'}</span>
+        </button>
+
+        <div className="toolbar-divider" />
+
+        <button
+          className="tool-btn"
+          onClick={onUndo}
+          disabled={!hasDocument || !canUndo}
+          title="Undo last action (Ctrl + Z)"
+          style={{ opacity: !canUndo ? 0.35 : 1 }}
+        >
+          <Undo2 size={15} />
+        </button>
+
+        <button
+          className="tool-btn"
+          onClick={onRedo}
+          disabled={!hasDocument || !canRedo}
+          title="Redo action (Ctrl + Y or Ctrl + Shift + Z)"
+          style={{ opacity: !canRedo ? 0.35 : 1 }}
+        >
+          <Redo2 size={15} />
         </button>
 
         <div className="toolbar-divider" />

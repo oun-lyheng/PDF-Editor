@@ -20,10 +20,50 @@ export function usePdfDocument() {
   
   // Annotations (Signatures, Stamps, Redactions, Highlights)
   const [annotations, setAnnotations] = useState([]);
+
+  // Undo / Redo History Stacks
+  const [undoStack, setUndoStack] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
   
   // Active Interactive Tool
   // 'select' | 'editText' | 'addText' | 'signature' | 'stamp' | 'highlight' | 'redact'
   const [activeTool, setActiveTool] = useState('select');
+
+  // Ref to always maintain immediate, synchronous state for exportDocument & snapshot creation
+  const stateRef = useRef({
+    pdfBytes,
+    rotations,
+    deletedPages,
+    pageOrder,
+    textEdits,
+    annotations,
+  });
+
+  useEffect(() => {
+    stateRef.current = {
+      pdfBytes,
+      rotations,
+      deletedPages,
+      pageOrder,
+      textEdits,
+      annotations,
+    };
+  }, [pdfBytes, rotations, deletedPages, pageOrder, textEdits, annotations]);
+
+  // Create clean snapshot of document state
+  const getSnapshot = useCallback(() => ({
+    textEdits: stateRef.current.textEdits ? JSON.parse(JSON.stringify(stateRef.current.textEdits)) : [],
+    annotations: stateRef.current.annotations ? JSON.parse(JSON.stringify(stateRef.current.annotations)) : [],
+    rotations: { ...stateRef.current.rotations },
+    deletedPages: [...stateRef.current.deletedPages],
+    pageOrder: [...stateRef.current.pageOrder],
+  }), []);
+
+  const pushToHistory = useCallback(() => {
+    const snap = getSnapshot();
+    setUndoStack((prev) => [...prev.slice(-30), snap]);
+    setRedoStack([]); // New action invalidates redo history
+  }, [getSnapshot]);
 
   // Load a new document
   const loadDocument = useCallback(async (data) => {
@@ -55,6 +95,8 @@ export function usePdfDocument() {
       setPageOrder(Array.from({ length: doc.numPages }, (_, i) => i + 1));
       setTextEdits([]);
       setAnnotations([]);
+      setUndoStack([]);
+      setRedoStack([]);
       setActiveTool('select');
       return true;
     } catch (err) {
@@ -65,42 +107,26 @@ export function usePdfDocument() {
 
   // Rotate a page by 90 degrees
   const rotatePage = useCallback((pageNumber, delta = 90) => {
+    pushToHistory();
     setRotations((prev) => {
       const current = prev[pageNumber] || 0;
       const next = (current + delta) % 360;
-      return { ...prev, [pageNumber]: next };
+      const updated = { ...prev, [pageNumber]: next };
+      stateRef.current.rotations = updated;
+      return updated;
     });
-  }, []);
+  }, [pushToHistory]);
 
   // Delete a page
   const deletePage = useCallback((pageNumber) => {
+    pushToHistory();
     setDeletedPages((prev) => [...prev, pageNumber]);
     setPageOrder((prev) => prev.filter((p) => p !== pageNumber));
-  }, []);
-
-  // Ref to always maintain immediate, synchronous state for exportDocument (avoiding React batching/closure lag)
-  const stateRef = useRef({
-    pdfBytes,
-    rotations,
-    deletedPages,
-    pageOrder,
-    textEdits,
-    annotations,
-  });
-
-  useEffect(() => {
-    stateRef.current = {
-      pdfBytes,
-      rotations,
-      deletedPages,
-      pageOrder,
-      textEdits,
-      annotations,
-    };
-  }, [pdfBytes, rotations, deletedPages, pageOrder, textEdits, annotations]);
+  }, [pushToHistory]);
 
   // Add or update an in-place text edit
   const upsertTextEdit = useCallback((edit) => {
+    pushToHistory();
     setTextEdits((prev) => {
       const existsIndex = prev.findIndex((e) => e.id === edit.id);
       let updated;
@@ -113,44 +139,98 @@ export function usePdfDocument() {
       stateRef.current.textEdits = updated;
       return updated;
     });
-  }, []);
+  }, [pushToHistory]);
 
   // Remove a text edit
   const removeTextEdit = useCallback((id) => {
+    pushToHistory();
     setTextEdits((prev) => {
       const updated = prev.filter((e) => e.id !== id);
       stateRef.current.textEdits = updated;
       return updated;
     });
-  }, []);
+  }, [pushToHistory]);
 
   // Add an annotation (signature, stamp, redaction, etc.)
   const addAnnotation = useCallback((annotation) => {
+    pushToHistory();
     const newAnnot = { ...annotation, id: `annot-${Date.now()}-${Math.random().toString(36).substr(2, 4)}` };
     setAnnotations((prev) => {
       const updated = [...prev, newAnnot];
       stateRef.current.annotations = updated;
       return updated;
     });
-  }, []);
+  }, [pushToHistory]);
 
   // Update annotation position or size
   const updateAnnotation = useCallback((id, updates) => {
+    pushToHistory();
     setAnnotations((prev) => {
       const updated = prev.map((a) => (a.id === id ? { ...a, ...updates } : a));
       stateRef.current.annotations = updated;
       return updated;
     });
-  }, []);
+  }, [pushToHistory]);
 
   // Remove an annotation
   const removeAnnotation = useCallback((id) => {
+    pushToHistory();
     setAnnotations((prev) => {
       const updated = prev.filter((a) => a.id !== id);
       stateRef.current.annotations = updated;
       return updated;
     });
-  }, []);
+  }, [pushToHistory]);
+
+  // Undo last action (Ctrl + Z)
+  const undo = useCallback(() => {
+    if (undoStack.length === 0) return false;
+
+    const currentSnap = getSnapshot();
+    const prevSnap = undoStack[undoStack.length - 1];
+
+    setRedoStack((prev) => [...prev, currentSnap]);
+    setUndoStack((prev) => prev.slice(0, -1));
+
+    setTextEdits(prevSnap.textEdits || []);
+    setAnnotations(prevSnap.annotations || []);
+    setRotations(prevSnap.rotations || {});
+    setDeletedPages(prevSnap.deletedPages || []);
+    setPageOrder(prevSnap.pageOrder || []);
+
+    stateRef.current.textEdits = prevSnap.textEdits || [];
+    stateRef.current.annotations = prevSnap.annotations || [];
+    stateRef.current.rotations = prevSnap.rotations || {};
+    stateRef.current.deletedPages = prevSnap.deletedPages || [];
+    stateRef.current.pageOrder = prevSnap.pageOrder || [];
+
+    return true;
+  }, [undoStack, getSnapshot]);
+
+  // Redo action (Ctrl + Y)
+  const redo = useCallback(() => {
+    if (redoStack.length === 0) return false;
+
+    const currentSnap = getSnapshot();
+    const nextSnap = redoStack[redoStack.length - 1];
+
+    setUndoStack((prev) => [...prev, currentSnap]);
+    setRedoStack((prev) => prev.slice(0, -1));
+
+    setTextEdits(nextSnap.textEdits || []);
+    setAnnotations(nextSnap.annotations || []);
+    setRotations(nextSnap.rotations || {});
+    setDeletedPages(nextSnap.deletedPages || []);
+    setPageOrder(nextSnap.pageOrder || []);
+
+    stateRef.current.textEdits = nextSnap.textEdits || [];
+    stateRef.current.annotations = nextSnap.annotations || [];
+    stateRef.current.rotations = nextSnap.rotations || {};
+    stateRef.current.deletedPages = nextSnap.deletedPages || [];
+    stateRef.current.pageOrder = nextSnap.pageOrder || [];
+
+    return true;
+  }, [redoStack, getSnapshot]);
 
   // Export current modified PDF to Uint8Array
   const exportDocument = useCallback(async () => {
@@ -191,6 +271,8 @@ export function usePdfDocument() {
     setPdfDoc(doc);
     setNumPages(doc.numPages);
     setPageOrder(Array.from({ length: doc.numPages }, (_, i) => i + 1));
+    setUndoStack([]);
+    setRedoStack([]);
     setActiveTool('select');
   }, [pdfBytes]);
 
@@ -205,6 +287,8 @@ export function usePdfDocument() {
     setPageOrder([]);
     setTextEdits([]);
     setAnnotations([]);
+    setUndoStack([]);
+    setRedoStack([]);
     setActiveTool('select');
   }, []);
 
@@ -235,5 +319,9 @@ export function usePdfDocument() {
     exportDocument,
     revertDocument,
     closeDocument,
+    undo,
+    redo,
+    canUndo: undoStack.length > 0,
+    canRedo: redoStack.length > 0,
   };
 }

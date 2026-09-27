@@ -323,7 +323,24 @@ export function App() {
     fileSystem.setIsDirty(true);
   };
 
-  // Global Keyboard Shortcuts (Ctrl+S, Ctrl+O)
+  // Undo & Redo Handlers
+  const handleUndo = useCallback(() => {
+    const success = pdfDocState.undo();
+    if (success) {
+      fileSystem.setIsDirty(true);
+      showToast('↶ Action undone (Ctrl+Z)', 'info');
+    }
+  }, [pdfDocState, fileSystem, showToast]);
+
+  const handleRedo = useCallback(() => {
+    const success = pdfDocState.redo();
+    if (success) {
+      fileSystem.setIsDirty(true);
+      showToast('↷ Action redone (Ctrl+Y)', 'info');
+    }
+  }, [pdfDocState, fileSystem, showToast]);
+
+  // Global Keyboard Shortcuts (Ctrl+S, Ctrl+O, Ctrl+Z, Ctrl+Y)
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Ctrl + S: Save in place
@@ -336,11 +353,32 @@ export function App() {
         e.preventDefault();
         handleOpenFile();
       }
+      // Ctrl + Z: Undo
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        const target = e.target;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+          return; // Allow native input undo when typing
+        }
+        e.preventDefault();
+        handleUndo();
+      }
+      // Ctrl + Y or Ctrl + Shift + Z: Redo
+      if (
+        ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') ||
+        ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && e.shiftKey)
+      ) {
+        const target = e.target;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+          return; // Allow native input redo when typing
+        }
+        e.preventDefault();
+        handleRedo();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave, handleOpenFile]);
+  }, [handleSave, handleOpenFile, handleUndo, handleRedo]);
 
   // Listen for changes to mark dirty
   const handleUpsertTextEdit = (edit) => {
@@ -425,6 +463,10 @@ export function App() {
         onRotateCurrentPage={handleRotateCurrentPage}
         hasDocument={Boolean(pdfDocState.pdfDoc)}
         onOpenSignatureModal={() => setIsSignatureModalOpen(true)}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={pdfDocState.canUndo}
+        canRedo={pdfDocState.canRedo}
       />
 
       {/* 3. Secondary Property Inspector Bar */}

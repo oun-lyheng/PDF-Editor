@@ -1,5 +1,8 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import uvicorn
 
 from src.features.documents.router import router as documents_router
@@ -30,6 +33,27 @@ async def health_check():
         "engine": "PyMuPDF (fitz)",
         "message": "FastAPI + PyMuPDF engine ready for true direct PDF stream editing"
     }
+
+# -------------------------------------------------------------
+# Serve Pre-Built Frontend (Zero Node.js required on client PC)
+# -------------------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+
+if os.path.isdir(STATIC_DIR):
+    assets_dir = os.path.join(STATIC_DIR, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        target_file = os.path.join(STATIC_DIR, full_path)
+        if full_path and os.path.isfile(target_file):
+            return FileResponse(target_file)
+        index_file = os.path.join(STATIC_DIR, "index.html")
+        if os.path.isfile(index_file):
+            return FileResponse(index_file)
+        return {"error": "Frontend static files not found."}
 
 if __name__ == "__main__":
     print("=" * 60)

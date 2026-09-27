@@ -71,8 +71,8 @@ PDF-Editor/
 ## Quick Start
 
 ### Prerequisites
-- **Node.js** 18+ (https://nodejs.org)
 - **Python** 3.10+ (https://python.org - make sure to check *"Add Python to PATH"* during installation)
+- *(Optional)* **Node.js** 18+ — only needed if you want to develop or modify the frontend source code.
 
 ---
 
@@ -82,15 +82,16 @@ Simply double-click **`start.bat`** in the project root folder.
 
 `start.bat` will automatically:
 1. Detect and activate Python `venv` (creates it and installs requirements if it's the first time).
-2. Start the FastAPI backend on `http://localhost:5000`.
-3. Check and install frontend dependencies (`npm install` if needed).
-4. Launch the frontend on `http://localhost:5173`.
+2. Start the FastAPI backend and serve the PDF Editor on `http://localhost:5000`.
+3. Open your default web browser to the editor automatically.
+
+Zero Node.js installation required on the client machine!
 
 ---
 
 ### Method 2: Manual Setup
 
-#### 1. Start Backend
+#### Run the Application (Python Only)
 ```powershell
 cd Backend
 python -m venv venv
@@ -98,15 +99,16 @@ python -m venv venv
 pip install -r requirements.txt
 python -m uvicorn main:app --host 127.0.0.1 --port 5000 --reload
 ```
-*Backend runs on `http://localhost:5000` with interactive API docs at `http://localhost:5000/docs`.*
+Open **`http://localhost:5000`** in your browser.
 
-#### 2. Start Frontend (in a new terminal)
+#### Frontend Development Mode (Optional)
+If you want to edit the React frontend with live hot-reloading:
 ```powershell
 cd UI-Frontend
 npm install
 npm run dev
 ```
-*Frontend runs on `http://localhost:5173`.*
+Open **`http://localhost:5173`** in your browser.
 
 ---
 
@@ -116,6 +118,8 @@ npm run dev
 | :--- | :--- | :--- |
 | **`Ctrl + S`** | Save in place | Overwrites active PDF directly on disk via PyMuPDF |
 | **`Ctrl + O`** | Open File | Opens native file dialog to select a PDF |
+| **`Ctrl + Z`** | Undo | Undoes the last action (text edits, annotations, rotations) |
+| **`Ctrl + Y`** / **`Ctrl + Shift + Z`** | Redo | Re-applies the last undone action |
 | **`Esc`** | Cancel Edit | Exits active in-place text editor without applying changes |
 | **`Enter`** | Commit Edit | Saves current text edit on the page |
 

@@ -39,7 +39,8 @@ pip install -r requirements.txt
 
 :START_SERVER
 echo ======================================================
-echo Starting FastAPI Backend on http://localhost:5000
+echo Starting PDF Editor on http://localhost:5000
 echo ======================================================
+start "" http://localhost:5000
 python -m uvicorn main:app --host 127.0.0.1 --port 5000 --reload
 pause

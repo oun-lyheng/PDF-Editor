@@ -1,5 +1,7 @@
 const CANDIDATE_PORTS = [5000, 8000];
-let activeBaseUrl = 'http://localhost:8000'; // Default to 8000 since uvicorn defaults to 8000
+let activeBaseUrl = typeof window !== 'undefined' && window.location.port !== '5173' && window.location.port !== ''
+  ? window.location.origin
+  : 'http://localhost:5000';
 
 export function getBackendBaseUrl() {
   return `${activeBaseUrl}/api/documents`;
