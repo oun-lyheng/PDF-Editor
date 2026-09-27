@@ -34,6 +34,11 @@ async def health_check():
         "message": "FastAPI + PyMuPDF engine ready for true direct PDF stream editing"
     }
 
+import mimetypes
+
+mimetypes.add_type("application/javascript", ".js")
+mimetypes.add_type("application/javascript", ".mjs")
+
 # -------------------------------------------------------------
 # Serve Pre-Built Frontend (Zero Node.js required on client PC)
 # -------------------------------------------------------------
@@ -49,10 +54,19 @@ if os.path.isdir(STATIC_DIR):
     async def serve_spa(full_path: str):
         target_file = os.path.join(STATIC_DIR, full_path)
         if full_path and os.path.isfile(target_file):
-            return FileResponse(target_file)
+            media_type = None
+            if target_file.endswith((".js", ".mjs")):
+                media_type = "application/javascript"
+            elif target_file.endswith(".css"):
+                media_type = "text/css"
+            elif target_file.endswith(".png"):
+                media_type = "image/png"
+            elif target_file.endswith(".svg"):
+                media_type = "image/svg+xml"
+            return FileResponse(target_file, media_type=media_type)
         index_file = os.path.join(STATIC_DIR, "index.html")
         if os.path.isfile(index_file):
-            return FileResponse(index_file)
+            return FileResponse(index_file, media_type="text/html")
         return {"error": "Frontend static files not found."}
 
 if __name__ == "__main__":
