@@ -20,12 +20,47 @@ if exist ".venv\Scripts\activate.bat" (
     goto CHECK_DEPENDENCIES
 )
 
-REM 2. If no venv found, auto-create it (first time setup)
-echo [!] Virtual environment not found. Creating venv automatically...
-python -m venv venv
+REM 2. Detect Python executable (checks PATH, py launcher, and default Windows install paths)
+set "PY_EXE="
+where python >nul 2>&1 && set "PY_EXE=python"
+if not defined PY_EXE (
+    where py >nul 2>&1 && set "PY_EXE=py -3.13"
+)
+if not defined PY_EXE (
+    where py >nul 2>&1 && set "PY_EXE=py"
+)
+if not defined PY_EXE if exist "%LOCALAPPDATA%\Programs\Python\Python313\python.exe" (
+    set "PY_EXE=%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
+)
+if not defined PY_EXE if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
+    set "PY_EXE=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+)
+if not defined PY_EXE if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" (
+    set "PY_EXE=%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+)
+if not defined PY_EXE if exist "C:\Program Files\Python313\python.exe" (
+    set "PY_EXE=C:\Program Files\Python313\python.exe"
+)
+
+if not defined PY_EXE (
+    echo ======================================================
+    echo [ERROR] Python was not found on this computer.
+    echo.
+    echo If you installed python-3.13.15-amd64.exe:
+    echo Please run the installer again, select "Modify", and
+    echo CHECK the box: [x] Add python.exe to PATH
+    echo ======================================================
+    pause
+    exit /b 1
+)
+
+echo [OK] Using Python: %PY_EXE%
+
+REM 3. If no venv found, auto-create it using the detected Python
+echo [!] Creating local virtual environment (venv)...
+"%PY_EXE%" -m venv venv
 if %errorlevel% neq 0 (
-    echo [ERROR] Python is not installed or not in PATH.
-    echo Please install Python 3.10+ from python.org and check "Add Python to PATH".
+    echo [ERROR] Failed to create virtual environment with %PY_EXE%.
     pause
     exit /b 1
 )
